@@ -2,6 +2,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy.io import fits
+from scipy.special import exp10
+import mpl_scatter_density
+from astropy.visualization.mpl_normalize import ImageNormalize
+from astropy.visualization import LogStretch
 DATADIR = 'data/'
 FITSDIR = '/home/andy/Downloads/prac3solar/data/'
 
@@ -13,7 +17,8 @@ FITSDIR = '/home/andy/Downloads/prac3solar/data/'
 plot1a = False
 plot1b = False
 plot1c = False
-plot2a = True
+plot2a = False
+plot2b = True
 
 
 
@@ -116,30 +121,95 @@ if(plot2a):
     mean_lgT = data[:,1]
     meanplus = data[:,1] + data[:,2]
     meanminus = data[:,1] - data[:,2]
+    meanplus2 = data[:,1] + 2*data[:,2]
+    meanminus2 = data[:,1] - 2*data[:,2]
 
     #Loading data from .fits
     hdu = fits.open(FITSDIR+'lgtg_750.fits')
     lgT = hdu[0].data
     z = hdu[1].data
-    xrandint = np.random.randint(0,767,100)
-    yrandint = np.random.randint(0,767,100)
-    T_all = np.asarray(())
+
+    #Creating random distribution
+    N_RAND = 10000                  #N of random 2D plane points
+    xrandint = np.random.randint(0,767,N_RAND)
+    yrandint = np.random.randint(0,767,N_RAND)
+    T_all = np.empty(shape=[768,N_RAND])
     for i in range(len(z)):
-        rand_z = np.zeros(100)
+        rand_z = np.zeros(N_RAND)
         for j in range(len(xrandint)):
             rand_z[j] = lgT[i,xrandint[j],yrandint[j]]
-        T_all = np.vstack((T_all,rand_z))
-    print(np.shape(T_all))
+        T_all[i] = rand_z
 
     #Plotting
-    #plt.figure()
-    #plt.plot(z, meanplus, 'k-.', lw=1)
-    #plt.plot(z, meanminus, 'k-.', lw=1)
-    #plt.fill_between(z, meanplus, meanminus, alpha=0.5, facecolor='tab:orange', label=r'$\sigma_{mean}$'+'(T(z))')
-    #plt.plot(z, mean_lgT, 'k', lw=2, label='< T > (z) [K]')
-    #plt.xlabel('z [Mm]')
-    #plt.ylabel('T [K]')
-    #plt.legend()
-    #ax = plt.gca()
-    #ax.set_yscale('log')
-    #plt.show()
+    plt.figure()
+    plt.plot(z, exp10(T_all), color='tab:blue',alpha=0.01)
+    plt.plot(z, exp10(mean_lgT), 'k', lw=2, label='< T > (z) [K]')
+    plt.plot(z, exp10(meanplus), 'r-.', lw=1)
+    plt.plot(z, exp10(meanminus), 'r-.', lw=1)
+    plt.plot(z, exp10(meanplus2), 'r--', lw=1, label='2'+r'$\sigma$'+' (< T >) (z)')
+    plt.plot(z, exp10(meanminus2), 'r--', lw=1)
+    plt.fill_between(z, exp10(meanplus), exp10(meanminus), alpha=0.5, facecolor='red', label=r'$\sigma$'+' (< T >) (z)')
+        #formatting
+    plt.xlabel('z [Mm]')
+    plt.ylabel('T [K]')
+    plt.legend(loc='lower right')
+    ax = plt.gca()
+    ax.set_yscale('log')
+    plt.show()
+
+## 2B ##"
+if(plot2b):
+    #Loading data from .txt
+    data = np.loadtxt(DATADIR+'z_lgT_ne_2b.txt',delimiter='\t',skiprows=1)
+    z = data[:,0]
+    mean_lgT = data[:,1]
+    meanTplus = data[:,1] + data[:,2]
+    meanTminus = data[:,1] - data[:,2]
+    meanTplus2 = data[:,1] + 2*data[:,2]
+    meanTminus2 = data[:,1] - 2*data[:,2]
+    meanNEplus = data[:,3] + data[:,4]
+    meanNEminus = data[:,3] - data[:,4]
+    meanNEplus2 = data[:,3] + 2*data[:,4]
+    meanNEminus2 = data[:,3] - 2*data[:,4]
+
+    #Loading data from .fits
+    hdu = fits.open(FITSDIR+'lgtg_750.fits')
+    lgT = hdu[0].data
+    z = hdu[1].data
+    hdu = fits.open(FITSDIR+'lgne_750.fits')
+    lgne = hdu[0].data
+
+    #Creating random distribution
+    N_RAND = 10000                  #N of random 2D plane points
+    xrandint = np.random.randint(0,767,N_RAND)
+    yrandint = np.random.randint(0,767,N_RAND)
+    T_all = np.empty(shape=[768,N_RAND])
+    ne_all = np.empty(shape=[768,N_RAND])
+    for i in range(len(z)):
+        rand_z1 = np.zeros(N_RAND)
+        rand_z2 = np.zeros(N_RAND)
+        for j in range(len(xrandint)):
+            rand_z1[j] = lgT[i,xrandint[j],yrandint[j]]
+            rand_z2[j] = lgne[i,xrandint[j],yrandint[j]]
+        T_all[i] = rand_z1
+        ne_all[i] = rand_z2
+
+    print(np.shape(T_all))
+    print(np.shape(ne_all))
+
+    #Plotting
+    norm = ImageNormalize(vmin=0,vmax=1000, stretch=LogStretch())
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1,projection='scatter_density')
+    dens = ax.scatter_density(exp10(ne_all),exp10(T_all), norm=norm, cmap='Greys', dpi=None)
+    #plt.plot(exp10(ne_all), exp10(T_all), color='tab:blue',alpha=0.01)
+    #plt.fill_between(z, exp10(meanTplus), exp10(meanTminus), alpha=0.5, facecolor='red', label=r'$\sigma$'+' (< T >) (z)')
+    #    #formatting
+    plt.xlabel('z ['+r'$cm^{-3}$'+']')
+    plt.ylabel('T [K]')
+    #plt.legend(loc='lower right')
+    ax = plt.gca()
+    ax.set_yscale('log')
+    ax.set_xscale('log')
+    plt.show()
+
