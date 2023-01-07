@@ -2,8 +2,12 @@
 import ChiantiPy.core as ch
 import numpy as np
 import matplotlib.pyplot as plt
-DATADIR = 'data/'
+from astropy.io import fits
+from scipy.special import exp10
+from tqdm import tqdm
 
+DATADIR = 'data/'
+FITSDIR = '/home/andy/Downloads/prac3solar/data/'
 
 
 
@@ -101,4 +105,22 @@ if (bool1c):
 
 ## 2A ##
 if (bool2a):
-    print('doing 2a')
+    RANGE = 100
+
+        #Importing from .fits
+    hdu = fits.open(FITSDIR+'lgtg_750.fits')
+    lgT = hdu[0].data
+    z = hdu[1].data
+
+        #Mean values for each z
+    mean_lgT = np.zeros(768)
+    stdev = np.zeros(768)
+
+    for i in range(768):
+        mean_lgT[i] = lgT[i,:,:].mean(axis=(0,1))
+        stdev[i] = lgT[i,:,:].std(axis=(0,1))
+
+        #Saving data in .txt to plot later:
+    full_array = np.stack([z,mean_lgT,stdev], axis=1)
+    np.savetxt(DATADIR+'z_lgT_2a.txt', full_array, header='z [Mm]\tlog(T) [K]', \
+            delimiter='\t', comments='')

@@ -1,7 +1,9 @@
 #Packages and constants
 import numpy as np
 import matplotlib.pyplot as plt
+from astropy.io import fits
 DATADIR = 'data/'
+FITSDIR = '/home/andy/Downloads/prac3solar/data/'
 
 
 
@@ -11,6 +13,7 @@ DATADIR = 'data/'
 plot1a = False
 plot1b = False
 plot1c = False
+plot2a = True
 
 
 
@@ -61,6 +64,7 @@ if(plot1b):
     data = np.loadtxt(DATADIR+'gtotal_T_1b.txt',delimiter='\t',skiprows=1)
     g_total = data[:,0]
     temp = data[:,1]
+    
     #Plotting
     plt.figure(figsize=(10,6))
     plt.plot(temp, g_total, label='Fe IX')
@@ -83,7 +87,7 @@ if(plot1c):
     #Loading data from .txt
     N_E = np.loadtxt(DATADIR+'N_E.txt',delimiter='\t',skiprows=1)
 
-        #Plotting
+    #Plotting
     plt.figure(figsize=(10,6))
     for i in range(3):
         data = np.loadtxt(DATADIR+'gtotal_T_'+'{:.1e}'.format(N_E[i])+'_1c.txt',delimiter='\t',skiprows=1)
@@ -91,7 +95,7 @@ if(plot1c):
         temp = data[:,1]
         plt.plot(temp, g_total, label=r'$n_e$'+'= '+'{:.1e}'.format(N_E[i])+' '+r'$cm^{-3}$')
 
-        #formatting
+        #Formatting
     plt.xlabel('T'+' [K]')
     plt.ylabel(r'$g_{total}$'+' ('+r'$\lambda$'+', '+r'$n_e$'+')' \
             +' ['+r'$erg$'+' '+ r'$cm^3$'+' '+'/'+' '+'s '+r'$ \ st$'+']')
@@ -104,3 +108,38 @@ if(plot1c):
     plt.title('Aggregated gain function, Fe IX')
     plt.show()
 
+## 2A ##
+if(plot2a):
+    #Loading data from .txt
+    data = np.loadtxt(DATADIR+'z_lgT_2a.txt',delimiter='\t',skiprows=1)
+    z = data[:,0]
+    mean_lgT = data[:,1]
+    meanplus = data[:,1] + data[:,2]
+    meanminus = data[:,1] - data[:,2]
+
+    #Loading data from .fits
+    hdu = fits.open(FITSDIR+'lgtg_750.fits')
+    lgT = hdu[0].data
+    z = hdu[1].data
+    xrandint = np.random.randint(0,767,100)
+    yrandint = np.random.randint(0,767,100)
+    T_all = np.asarray(())
+    for i in range(len(z)):
+        rand_z = np.zeros(100)
+        for j in range(len(xrandint)):
+            rand_z[j] = lgT[i,xrandint[j],yrandint[j]]
+        T_all = np.vstack((T_all,rand_z))
+    print(np.shape(T_all))
+
+    #Plotting
+    #plt.figure()
+    #plt.plot(z, meanplus, 'k-.', lw=1)
+    #plt.plot(z, meanminus, 'k-.', lw=1)
+    #plt.fill_between(z, meanplus, meanminus, alpha=0.5, facecolor='tab:orange', label=r'$\sigma_{mean}$'+'(T(z))')
+    #plt.plot(z, mean_lgT, 'k', lw=2, label='< T > (z) [K]')
+    #plt.xlabel('z [Mm]')
+    #plt.ylabel('T [K]')
+    #plt.legend()
+    #ax = plt.gca()
+    #ax.set_yscale('log')
+    #plt.show()
