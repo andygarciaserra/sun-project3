@@ -291,10 +291,10 @@ if (plot2b):
 if (plot3b):
 
     #Importing from fits
-    N = 16
+    N = 4
     data = fits.getdata(DATADIR+'I_2d_N'+str(N)+'.fits')
     plt.figure()
-    plt.imshow(data, cmap='plasma', norm=colors.LogNorm())
+    plt.imshow(data, cmap='viridis', norm=colors.LogNorm())
     plt.xlabel('X [Mm]',fontsize=15)
     plt.ylabel('Y [Mm]',fontsize=15)
     plt.xticks(fontsize=15)
