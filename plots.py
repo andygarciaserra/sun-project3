@@ -6,6 +6,7 @@ from scipy.special import exp10
 import mpl_scatter_density
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.visualization import LogStretch
+from matplotlib import colors
 DATADIR = 'data/'
 FITSDIR = '/home/andy/Downloads/prac3solar/data/'
 FIGDIR = 'figures/'
@@ -19,9 +20,9 @@ plot1a = False
 plot1b = False
 plot1c = False
 plot2a = False
-plot2a_paper = True
+plot2a_paper = False
 plot2b = False
-plot3b = False
+plot3b = True
 
 
 
@@ -290,15 +291,16 @@ if (plot2b):
 if (plot3b):
 
     #Importing from fits
-    N = 4
+    N = 16
     data = fits.getdata(DATADIR+'I_2d_N'+str(N)+'.fits')
     plt.figure()
-    plt.imshow(data, cmap='viridis', vmin= np.amin(data), vmax=np.amax(data))    
+    plt.imshow(data, cmap='plasma', norm=colors.LogNorm())
     plt.xlabel('X [Mm]',fontsize=15)
     plt.ylabel('Y [Mm]',fontsize=15)
     plt.xticks(fontsize=15)
     plt.yticks(fontsize=15)
-    plt.colorbar(label='I [erg]')
+    cb = plt.colorbar(label='I /'+r'$I_{max}$')
+    cb.ax.tick_params(labelsize=15)
     plt.tight_layout()
     plt.savefig(FIGDIR+'I_2D_N'+str(N)+'.png',dpi=300)
     plt.show()
