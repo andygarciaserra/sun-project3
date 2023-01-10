@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 from astropy.io import fits
 from scipy.special import exp10
 from tqdm import tqdm
-
 DATADIR = 'data/'
 FITSDIR = '/home/andy/Downloads/prac3solar/data/'
+
 
 
 
@@ -18,7 +18,8 @@ bool1b = False
 bool1c = False  
 bool2a = False
 bool2b = False
-bool3a = True
+bool3a = False
+bool3bc = True
 
 
 
@@ -83,9 +84,9 @@ if (bool1b):
 if (bool1c):
         #Defining temperature and electron density
     temp = np.geomspace(5e4,5e7,46)
-    N_E = [3e7, 3e8, 3e10]
+    N_E = [3e7, 3e8, 3e9, 3e10]
     
-    for i in range(3):
+    for i in range(4):
         edens = np.full(46,N_E[i])
 
             #Calculating gain function
@@ -187,8 +188,58 @@ if (bool3a):
     integrand = (1/1.2)*np.multiply(g211,np.multiply(edens,edens))
     int = np.trapz(integrand,z)
     print(int)
-    
-    
 
+
+## 3B ##
+if (bool3bc):
     
-            
+        #Importing from .fits
+    hdu = fits.open(FITSDIR+'lgne_750.fits')
+    lgne = hdu[0].data
+    z = hdu[1].data*1e8                 #Mm to cm
+    hdu = fits.open(FITSDIR+'lgtg_750.fits')
+    lgT = hdu[0].data
+
+        #Equally spacing 2d grid for N=4
+    N = 16                               #number of columns (NxN grid)
+    pos = np.empty(shape=[N])
+    I_2d = np.empty(shape=[N,N])
+    step = int(767/(N-1))
+    for i in range(N):
+        pos[i] = i*step
+    pos = pos.astype(int)
+
+        #Calculating each column and creating 2D intensity array
+    for l in range(N):                  #loop for x-axis
+        for j in range(N):              #loop for y-axis
+            edens = exp10(lgne[:,pos[l],pos[j]]-6)    #m^-3 to cm^-3
+            temp = exp10(lgT[:,pos[l],pos[j]])
+
+                #Calculating gain function via Chianti
+            Fe_xiv = ch.ion('fe_14', temperature=temp, eDensity=edens, \
+                        abundance='sun_coronal_1992_feldman_ext')
+            Fe_xiv.intensity()
+            index_ord = np.argsort(Fe_xiv.Intensity['wvl'])
+            wvl_ord = Fe_xiv.Intensity['wvl'][index_ord]
+            intensities_ord = Fe_xiv.Intensity['intensity'][:, index_ord]
+
+                #Finding maximums
+            pos_T, pos_wvl = np.unravel_index(intensities_ord.argmax(), \
+                                            intensities_ord.shape)
+
+                #Calculating the aggregated gain function at lam = 211A
+            int_reduced = intensities_ord[:,pos_wvl-5:pos_wvl+5]
+            g211 = np.sum(int_reduced, axis=1)
+            for k in range(len(temp)):
+                if (temp[k]<1e5 or edens[k]>1e11):
+                    g211[k] = 0
+            integrand = (1/1.2)*np.multiply(g211,np.multiply(edens,edens))
+            int = np.trapz(integrand,z)
+            I_2d[l,j] = int
+    
+        #Printing to double check I_2d dimensions
+    print(I_2d)
+
+        #Saving to .fits to plot later
+    hdu = fits.PrimaryHDU(I_2d)
+    hdu.writeto(DATADIR+'I_2d_N'+str(N)+'.fits')
